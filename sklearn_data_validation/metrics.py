@@ -3,52 +3,35 @@ import numpy as np
 from scipy.stats import wasserstein_distance as scipy_wasserstein_distance
 from sklearn.preprocessing import StandardScaler
 from scipy.stats import kstest, normaltest, chisquare
+from distribution import Distribution
 
-def abs_difference_of_means(ref_var, var):
-    return np.abs(np.mean(ref_var) - np.mean(var))
+def abs_difference_of_means(dist_ref: Distribution, dist: Distribution):
+    return np.abs(dist_ref.mean - dist.mean)
 
-def relative_abs_difference_of_means(ref_var, var):
-    return np.abs(np.mean(ref_var) - np.mean(var)) / np.mean(ref_var)
+def relative_abs_difference_of_means(dist_ref: Distribution, dist: Distribution):
+    return np.abs(dist_ref.mean - dist.mean) / dist_ref.mean
 
+def is_ks_successfull(var, dist_ref: Distribution, p_threshold=0.05):
+    return kstest(var, dist_ref.cdf).pvalue > p_threshold
 
-def relative_wasserstein_varance(ref_var, var):
-    return scipy_wasserstein_distance(ref_var, var) / ref_var.mean()
-
-def is_var_within_z_threshold(ref_var, var, z_threshold=3):
-    return abs_difference_of_means(ref_var, var) < (ref_var.std() * z_threshold)
-
-def is_ks_successfull(ref_var, var, p_threshold=0.05):
-    return kstest(ref_var, var).pvalue > p_threshold
-
-def is_vars_normal(ref_var, var, p_threshold=0.05):
-    ref_var = StandardScaler().fit_transform(np.array(ref_var).reshape(-1, 1))
-    var = StandardScaler().fit_transform(np.array(var).reshape(-1, 1))
-    
-    if normaltest(ref_var).pvalue < p_threshold:
-        return None
-    elif normaltest(ref_var).pvalue > p_threshold and normaltest(var).pvalue > p_threshold:
-        return True
-    else:
-        return False
-
-def psi(ref_var, var, bins=10):
-    ref_dist, ref_dist_bins = pd.cut(ref_var, 10, retbins=True)
+def psi(var, dist_ref: Distribution, bins=10):
+    ref_dist, ref_dist_bins = pd.cut(ref_dist, 10, retbins=True)
     ref_dist = ref_dist.value_counts(normalize=True)
     
-    var_dist = pd.cut(var, bins=ref_dist_bins).value_counts(normalize=True)
+    var_dist = pd.cut(dist, bins=ref_dist_bins).value_counts(normalize=True)
     PSI=((var_dist - ref_dist) * np.log(var_dist / ref_dist)).sum()
     return PSI
 
-def is_chisquare_successfull(ref_var, var, p_threshold=0.05):
-    ref_dist, ref_dist_bins = pd.qcut(ref_var, 4, retbins=True)
+def is_chisquare_successfull(ref_dist, dist, p_threshold=0.05):
+    ref_dist, ref_dist_bins = pd.qcut(ref_dist, 4, retbins=True)
     ref_dist = ref_dist.value_counts(normalize=True)
 
-    var_dist = pd.cut(var, bins=ref_dist_bins).value_counts(normalize=True)
+    var_dist = pd.cut(dist, bins=ref_dist_bins).value_counts(normalize=True)
     
     return chisquare(var_dist, f_exp=ref_dist).pvalue > p_threshold
 
-def cdf(x, var, bins=10):
-    cdf_ = var.value_counts(bins=bins, normalize=True).sort_index().cumsum()
+def cdf(x, dist, bins=10):
+    cdf_ = dist.value_counts(bins=bins, normalize=True).sort_index().cumsum()
     def get_cdf(x):
         if x > cdf_.index.max().right:
             x = cdf_.index.max().right - 0.00001
@@ -61,6 +44,17 @@ def cdf(x, var, bins=10):
     else:
         return get_cdf(x)
 
-def pdf(x, var, bins=10):
-    pdf_ = var.value_counts(bins=bins, normalize=True).sort_index()
+def pdf(x, dist, bins=10):
+    pdf_ = dist.value_counts(bins=bins, normalize=True).sort_index()
     return pdf_.iloc[pdf_.index.get_loc(x)]
+
+
+# def is_dist_normal(dist: Distribution, p_threshold=0.05):
+#     dist = StandardScaler().fit_transform(np.array(dist).reshape(-1, 1))
+#     return normaltest(dist).pvalue > p_threshold
+
+# def relative_wasserstein_varance(dist_ref: Distribution, dist: Distribution):
+#     return scipy_wasserstein_distance(ref_dist, dist) / ref_dist.mean()
+
+# def is_var_within_z_threshold(ref_dist, dist, z_threshold=3):
+#     return abs_difference_of_means(ref_dist, dist) < (ref_dist.std() * z_threshold)
