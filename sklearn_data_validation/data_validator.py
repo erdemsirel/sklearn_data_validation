@@ -1,33 +1,42 @@
+import pickle
 import pandas as pd
 import sklearn
 from sklearn.base import BaseEstimator, TransformerMixin
+from feature_matrix import FeatureMatrix
+import metrics
+import copy
+import logging
 
-# TODO: Mean - Standard Deviation - Z-Score
-# Column Order
-# 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
-X_train = pd.read_csv("https://raw.githubusercontent.com/erdemsirel/ds555_hw3_scoring/master/X_train.csv")
 
 class DataValidator(BaseEstimator, TransformerMixin):
-    def __init__(self):
-        pass
-        
-    def outlier_detector(self,X, y=None):
-        X = pd.DataFrame(X).copy()
-        X.describe
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self.feature_matrix = None
 
-    def fit(self,X,y=None):
-        self.lower_bound = []
-        self.upper_bound = []
-        X.apply(self.outlier_detector)
+    def fit(self, X, y=None):
+        self.feature_matrix = FeatureMatrix(X=X, **self.kwargs)
+        self.is_fitted = True
         return self
-    
-    def transform(self,X,y=None):
-        X = pd.DataFrame(X).copy()
-        for i in range(X.shape[1]):
-            x = X.iloc[:, i].copy()
-            x[(x < self.lower_bound[i]) | (x > self.upper_bound[i])] = np.nan
-            X.iloc[:, i] = x
-        return X
-    
-if __name__== "__main__":
+
+    def transform(self, X, y=None):
+        score_metrics = self.feature_matrix.calculate_metrics(X)
+        if self.kwargs.get("only_unsuccessfull", False):
+            score_metrics = score_metrics[~score_metrics["success"]]
+        return score_metrics
+
+    def to_pickle(self, path):
+        if self.feature_matrix is None:
+            raise Exception("Only fitted objects could be pickled.")
+        with open(path, "wb") as f:
+            pickle.dump(copy.copy(self), f)
+            logger.info(f"The DataValidator instance has been saved as pickle into {path} path.")
+
+    @staticmethod
+    def read_pickle(path):
+        with open(path, "rb") as f:
+            loaded_instance = pickle.load(f)
+            logger.info(f"The DataValidator instance has been loaded from {path} path.")
+            return loaded_instance

@@ -3,6 +3,10 @@ import numpy as np
 import metrics
 from scipy.stats import kstest, normaltest, chisquare
 from sklearn.preprocessing import StandardScaler
+import logging
+import time
+
+logger = logging.getLogger(__name__)
 
 
 class Distribution:
@@ -12,10 +16,10 @@ class Distribution:
         self.cdf_ = self.pdf_.cumsum()
 
         self.dist_q, self.dist_q_bins = pd.qcut(var, self.bins, retbins=True)
-        self.dist_q = self.dist_q.value_counts(normalize=True)
+        self.dist_q = self.dist_q.value_counts(normalize=True).sort_index()
 
         self.dist, self.dist_bins = pd.cut(var, self.bins, retbins=True)
-        self.dist = self.dist.value_counts(normalize=True)
+        self.dist = self.dist.value_counts(normalize=True).sort_index()
 
         self.stats = var.describe(percentiles=np.arange(0, 1, 1 / self.bins)[1:], include="all").to_dict()
         for stat_key, stat_value in self.stats.items():
@@ -49,11 +53,8 @@ class Distribution:
     def __repr__(self):
         return str(vars(self).keys())
 
-    def calculate_kstest_pvalue(self, var):
-        return metrics.kstest_pvalue(var, ref_dist_cdf=self.cdf)
-
-    def calculate_chisquare_pvalue(self, var):
-        return metrics.chisquare_pvalue(var=var, ref_dist=self.dist_q, ref_dist_bins=self.dist_q_bins)
-
-    def calculate_psi(self, var):
-        return metrics.psi(var=var, ref_dist=self.dist, ref_dist_bins=self.dist_bins)
+    def calculate_metric(self, var, metric):
+        start = time.time()
+        result = metric(var=var, ref_dist=self)
+        logger.info(f"{metric.__name__} calculated in {round(time.time() - start)} seconds.")
+        return result
