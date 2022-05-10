@@ -56,6 +56,9 @@ def _psi(var, ref_dist_dist, ref_dist_dist_bins):
     # Implemented
     var_dist = pd.cut(var, bins=ref_dist_dist_bins).value_counts(normalize=True)
     PSI = ((var_dist - ref_dist_dist) * np.log(var_dist / ref_dist_dist)).sum()
+    if np.isinf(PSI):
+        print(var_dist)
+        print(ref_dist_dist)
     return PSI
 
 
@@ -63,8 +66,16 @@ def dist_psi(var, ref_dist):
     return _psi(var, ref_dist.dist, ref_dist.dist_bins)
 
 
-def dist_relative_difference_of_means(var, ref_dist):
-    return relative_difference_of_means(dist_mean=np.mean(var), dist_ref_mean=ref_dist.mean)
+def _missing_value_ratio_relative_diff(var_missing_value_ratio, ref_dist_missing_value_ratio):
+    return np.abs(np.round((var_missing_value_ratio / (ref_dist_missing_value_ratio+0.0000001)), 3))
+    
+    
+def dist_missing_val_rat_rel_diff(var, ref_dist):
+    return _missing_value_ratio_relative_diff(var_missing_value_ratio=var.isna().mean(), 
+                                              ref_dist_missing_value_ratio=ref_dist.missing_value_ratio)
+
+def dist_rel_abs_diff_of_means(var, ref_dist):
+    return relative_abs_difference_of_means(dist_mean=np.mean(var), dist_ref_mean=ref_dist.mean)
 
 
 def dist_z_score_abs(var, ref_dist):
@@ -75,16 +86,18 @@ DISTRIBUTION_METRICS = [
     dist_chisquare_pvalue,
     dist_kstest_pvalue,
     dist_psi,
-    dist_relative_difference_of_means,
+    dist_rel_abs_diff_of_means,
     dist_z_score_abs,
+    dist_missing_val_rat_rel_diff,
 ]
 
 DEFAULT_METRIC_THRESHOLDS = {
     "dist_chisquare_pvalue": {"threshold": 0.05, "type_expected": "g"},
     "dist_kstest_pvalue": {"threshold": 0.05, "type_expected": "l"},
     "dist_psi": {"threshold": 0.2, "type_expected": "l"},
-    "dist_relative_difference_of_means": {"threshold": 0.2, "type_expected": "l"},
+    "dist_rel_abs_diff_of_means": {"threshold": 1.2, "type_expected": "l"},
     "dist_z_score_abs": {"threshold": 3, "type_expected": "l"},
+    "dist_missing_val_rat_rel_diff": {"threshold": 0.2, "type_expected": "l"},
 }
 
 

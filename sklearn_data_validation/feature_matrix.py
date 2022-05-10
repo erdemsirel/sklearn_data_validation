@@ -1,6 +1,5 @@
 from os import rename
 from typing import Dict
-from black import E
 import pandas as pd
 import numpy as np
 import metrics
@@ -10,7 +9,6 @@ import logging
 import math
 
 logger = logging.getLogger(__name__)
-
 
 class FeatureMatrix:
     def __init__(self, X: pd.DataFrame, bins: int = 100, p_threshold=0.05, **kwargs):
@@ -40,7 +38,7 @@ class FeatureMatrix:
             col_dist = self.distributions.get(col)
             if col_dist is None:
                 continue
-            logger.info("Calculating metrics for ", col)
+            logger.debug(f"Calculating metrics for {col}")
             feat_metrics[col] = {
                 metric.__name__: col_dist.calculate_metric(X_[col], metric) for metric in metrics.DISTRIBUTION_METRICS
             }
@@ -56,7 +54,7 @@ class FeatureMatrix:
         result.columns = result.columns.str.replace("dist_", "")
         return result
 
-    def plot_attr(self, attr, ncols=3):
+    def plot_attr(self, attr, ncols=2):
         print("TEST", math.ceil(len(self.distributions)))
         nrows = int(math.ceil(len(self.distributions)) / ncols)
         fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(16, nrows * 4))

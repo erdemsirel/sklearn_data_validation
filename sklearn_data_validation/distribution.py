@@ -20,7 +20,7 @@ class Distribution:
 
         self.dist, self.dist_bins = pd.cut(var, self.bins, retbins=True)
         self.dist = self.dist.value_counts(normalize=True).sort_index()
-
+        self.missing_value_ratio = var.isna().mean()
         self.stats = var.describe(percentiles=np.arange(0, 1, 1 / self.bins)[1:], include="all").to_dict()
         for stat_key, stat_value in self.stats.items():
             setattr(self, stat_key, stat_value)
@@ -56,5 +56,5 @@ class Distribution:
     def calculate_metric(self, var, metric):
         start = time.time()
         result = metric(var=var, ref_dist=self)
-        logger.info(f"{metric.__name__} calculated in {round(time.time() - start)} seconds.")
+        logger.debug(f"{metric.__name__} calculated in {round(time.time() - start)} seconds.")
         return result

@@ -3,6 +3,7 @@ import pandas as pd
 import sklearn
 from sklearn.base import BaseEstimator, TransformerMixin
 from feature_matrix import FeatureMatrix
+from utils import to_markdown
 import metrics
 import copy
 import logging
@@ -25,6 +26,9 @@ class DataValidator(BaseEstimator, TransformerMixin):
         score_metrics = self.feature_matrix.calculate_metrics(X)
         if self.kwargs.get("only_unsuccessfull", False):
             score_metrics = score_metrics[~score_metrics["success"]]
+        
+        if self.kwargs.get("log_metrics", True):
+            logger.info("Feature Matrix metrics\n" + to_markdown(score_metrics))
         return score_metrics
 
     def to_pickle(self, path):
