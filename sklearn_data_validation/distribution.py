@@ -25,7 +25,7 @@ class Distribution:
         for stat_key, stat_value in self.stats.items():
             setattr(self, stat_key, stat_value)
 
-        self.is_var_normal = metrics.is_var_normal(var, p_threshold=p_threshold)
+        self.is_normal = metrics.is_var_normal(var, p_threshold)
 
     @staticmethod
     def get_distribution_function_value(x, df_):

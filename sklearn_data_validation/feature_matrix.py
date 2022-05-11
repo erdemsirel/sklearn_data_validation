@@ -30,17 +30,17 @@ class FeatureMatrix:
             try:
                 self.distributions[col] = Distribution(var=X[col], bins=bins, p_threshold=p_threshold)
             except Exception as e:
-                logger.warn(f"Cannot create Distribution object for {col}.")
+                logger.warning(f"Cannot create Distribution object for {col}. {str(e)}", stack_info=False)
 
     def calculate_metrics(self, X_):
         feat_metrics = {}
         for col in X_.columns:
-            col_dist = self.distributions.get(col)
-            if col_dist is None:
+            feat_dist = self.distributions.get(col)
+            if feat_dist is None:
                 continue
             logger.debug(f"Calculating metrics for {col}")
             feat_metrics[col] = {
-                metric.__name__: col_dist.calculate_metric(X_[col], metric) for metric in metrics.DISTRIBUTION_METRICS
+                metric.__name__: feat_dist.calculate_metric(X_[col], metric) for metric in metrics.DISTRIBUTION_METRICS
             }
 
         result = pd.DataFrame(feat_metrics).T
